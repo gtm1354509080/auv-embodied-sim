@@ -1,0 +1,9 @@
+/home/ubuntu/miniconda3/envs/auv_rl/lib/python3.10/site-packages/torch/cuda/__init__.py:228: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 11060). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at /__w/pytorch/pytorch/c10/cuda/CUDAFunctions.cpp:119.)
+  return torch._C._cuda_getDeviceCount() > 0
+
+=== PPO @ nominal (mass×1.0, drag×1.0, 20 eps) ===
+episode reward :     452.36 ± 38.87
+depth MAE (m)  :     0.0469 ± 0.0485
+hold ratio     :      0.956 ± 0.027
+episode length :      500.0 ± 0.0
+已保存: results/eval_ppo_nominal.csv
