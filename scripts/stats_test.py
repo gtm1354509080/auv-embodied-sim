@@ -73,18 +73,35 @@ def rankdata(a):
 
 
 def wilcoxon_p(x, y):
-    """Wilcoxon 符号秩检验（配对），正态近似，双侧。"""
+    """Wilcoxon 符号秩检验（配对），正态近似，双侧。
+    返回 (p, rank_biserial_r, n_used)。
+    rank-biserial r = (W+ - W-) / (n(n+1)/2)，正值表示 x > y 方向。"""
     d = x - y
     d = d[d != 0.0]
     n = len(d)
     if n < 5:
-        return float("nan")
+        return float("nan"), float("nan"), n
     r = rankdata(np.abs(d))
     W = float(r[d > 0].sum())
+    total = n * (n + 1) / 2.0
+    r_rb = (2.0 * W - total) / total
     mu = n * (n + 1) / 4.0
     sigma = math.sqrt(n * (n + 1) * (2 * n + 1) / 24.0)
     z = (W - mu) / sigma
-    return 2.0 * (1.0 - norm_cdf(abs(z)))
+    return 2.0 * (1.0 - norm_cdf(abs(z))), r_rb, n
+
+
+def holm_adjust(pvals):
+    """Holm-Bonferroni 校正。输入 p 列表（可含 nan），输出校正后 p 列表。"""
+    m = sum(0 if math.isnan(p) else 1 for p in pvals)
+    order = sorted((p, i) for i, p in enumerate(pvals) if not math.isnan(p))
+    adj = [float("nan")] * len(pvals)
+    running = 0.0
+    for rank, (p, i) in enumerate(order):
+        val = min(1.0, (m - rank) * p)
+        running = max(running, val)
+        adj[i] = running
+    return adj
 
 
 def welch_p(x, y):
@@ -110,8 +127,7 @@ def main():
     ap.add_argument("--col", default="hold", choices=["reward", "mae", "hold"])
     args = ap.parse_args()
 
-    print(f"指标: {args.col} | 主检验 Wilcoxon(配对) | 辅助 Welch t")
-    print("-" * 92)
+    rows = []
     for label, fa, fb in COMPARISONS:
         pa, pb = os.path.join(RESULTS, fa), os.path.join(RESULTS, fb)
         if not (os.path.exists(pa) and os.path.exists(pb)):
@@ -120,12 +136,37 @@ def main():
         x, y = load_col(pa, args.col), load_col(pb, args.col)
         n = min(len(x), len(y))
         x, y = x[:n], y[:n]
-        diff = x.mean() - y.mean()
-        pw = wilcoxon_p(x, y)
+        pw, r_rb, n_eff = wilcoxon_p(x, y)
         pt = welch_p(x, y)
-        print(f"{label:34s} n={n:2d}  {x.mean():.4f}±{x.std(ddof=1):.4f} vs "
-              f"{y.mean():.4f}±{y.std(ddof=1):.4f}  diff={diff:+.4f}  "
-              f"W:{sig(pw):15s} t:{sig(pt)}")
+        rows.append({"label": label, "n": n,
+                     "mx": x.mean(), "sx": x.std(ddof=1),
+                     "my": y.mean(), "sy": y.std(ddof=1),
+                     "diff": x.mean() - y.mean(),
+                     "p_w": pw, "r_rb": r_rb, "p_t": pt})
+
+    p_holm = holm_adjust([r["p_w"] for r in rows])
+    for r, ph in zip(rows, p_holm):
+        r["p_holm"] = ph
+
+    print(f"指标: {args.col} | 主检验 Wilcoxon(配对) | r_rb=rank-biserial 效应量 | Holm=多重校正后 p | 辅助 Welch t")
+    print("-" * 118)
+    for r in rows:
+        print(f"{r['label']:34s} n={r['n']:2d}  {r['mx']:.4f}±{r['sx']:.4f} vs "
+              f"{r['my']:.4f}±{r['sy']:.4f}  diff={r['diff']:+.4f}  "
+              f"W:{sig(r['p_w']):15s} r={r['r_rb']:+.2f}  Holm:{sig(r['p_holm']):15s} t:{sig(r['p_t'])}")
+
+    out = os.path.join(RESULTS, f"stats_summary_{args.col}.csv")
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["label", "n", "mean_x", "std_x", "mean_y", "std_y", "diff",
+                    "p_wilcoxon", "rank_biserial_r", "p_holm", "p_welch"])
+        for r in rows:
+            w.writerow([r["label"], r["n"], f"{r['mx']:.6f}", f"{r['sx']:.6f}",
+                        f"{r['my']:.6f}", f"{r['sy']:.6f}", f"{r['diff']:.6f}",
+                        f"{r['p_w']:.3e}", f"{r['r_rb']:.4f}",
+                        f"{r['p_holm']:.3e}" if not math.isnan(r["p_holm"]) else "",
+                        f"{r['p_t']:.3e}"])
+    print(f"\n已生成 {out} ({len(rows)} rows)")
 
 
 if __name__ == "__main__":
