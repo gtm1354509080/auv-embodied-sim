@@ -1,20 +1,16 @@
 """转储单回合轨迹：depth / target / action 时间序列，供 Fig 3、Fig 5 使用。
 
-相对 DeepSeek 版的两处修正：
-1. 时间轴对齐：原版把第 1 步之后的 depth 记在 t=0，整条曲线平移了一个 dt。
-   本版先记录 reset 后的初始状态（t=0），再从 t=dt 开始记录。
-2. 环境属性访问改用 get_attr()：原版 venv.envs[0] 只在 DummyVecEnv 上有效，
-   被 VecNormalize 包装后会 AttributeError（本脚本 PID 路径恰好不加载 vecnorm
-   所以能跑，但属于脆弱写法）。
-
-脉冲参数与 evaluate.py 的评估场景一致（pulses_per_episode=(2,2)、
-obs_noise_std=0.0）——轨迹图展示的是评估场景，这是正确的对应关系。
-PID 增益 kp=3.0/ki=0.0/kd=1.5，与 Table 2 网格搜索终稿一致。
+修正历史：
+1. 时间轴对齐（t=0 记录 reset 后的初始状态）
+2. 环境属性访问改用 get_attr()（VecNormalize 兼容）
+3. 加 FixedTargetWrapper：把 target 固定为 3.0m（默认 AuvDepthEnv reset
+   会随机采样 target，导致 Fig 3 展示的 target 每次不同）。
 """
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import argparse
 
+import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
@@ -25,6 +21,24 @@ from envs.pid_controller import PIDController
 
 DT = 0.1
 STEPS = 500
+FIXED_TARGET = 3.0
+
+
+class FixedTargetWrapper(gym.Wrapper):
+    """每次 reset 后强制设置 target_depth，并重算 obs（因为 depth_error 变了）。"""
+
+    def __init__(self, env, target=3.0):
+        super().__init__(env)
+        self.target = target
+
+    def reset(self, **kwargs):
+        obs, info = self.env.reset(**kwargs)
+        self.env.target_depth = float(self.target)
+        # target 变了 → obs 里 depth_error 也要跟着变
+        obs = self.env._get_obs()
+        info = dict(info)
+        info["target"] = float(self.target)
+        return obs, info
 
 
 def build(scenario, seed):
@@ -37,6 +51,7 @@ def build(scenario, seed):
         )
     else:
         env = AuvDepthEnv()
+    env = FixedTargetWrapper(env, target=FIXED_TARGET)
     venv = DummyVecEnv([lambda: env])
     venv.seed(seed)
     return venv
@@ -68,7 +83,6 @@ def main():
     pid = PIDController(kp=3.0, ki=0.0, kd=1.5, dt=DT)
     traj = {"t": [], "depth": [], "target": [], "action": []}
 
-    # t=0：reset 后的初始状态（动作记为初始 last_action=0）
     traj["t"].append(0.0)
     traj["depth"].append(float(venv.get_attr("depth")[0]))
     traj["target"].append(float(venv.get_attr("target_depth")[0]))
@@ -96,7 +110,7 @@ def main():
         w.writerow(["time", "depth", "target", "action"])
         for t, d, tg, a in zip(traj["t"], traj["depth"], traj["target"], traj["action"]):
             w.writerow([t, d, tg, a])
-    print(f"saved {csv_path}")
+    print(f"saved {csv_path} (target={FIXED_TARGET} m)")
 
 
 if __name__ == "__main__":

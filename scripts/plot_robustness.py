@@ -83,7 +83,8 @@ def main():
                color=COLORS[i % len(COLORS)], hatch=HATCHES[i % len(HATCHES)],
                edgecolor="black", linewidth=0.5, error_kw={"linewidth": 0.6},
                label=m)
-
+        
+    ax.set_xlim(-0.5, n_s - 0.5)
     ax.set_xticks(range(n_s))
     ax.set_xticklabels([SCEN_LABELS[k] for k in SCEN_KEYS])
     ax.set_ylabel("Hold ratio")
