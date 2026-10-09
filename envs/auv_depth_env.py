@@ -46,6 +46,8 @@ class AuvDepthEnv(gym.Env):
         self.terminate_on_success = terminate_on_success
         self.terminate_on_attitude = terminate_on_attitude
         self.fix_drag_sign = fix_drag_sign
+         # 奖励权重（可被外部脚本覆盖，默认值与原版一致）
+        self.w1, self.w2, self.w3, self.w4 = 1.0, 0.1, 0.01, 0.001
 
         self.target_depth = 2.5
         self.current_step = 0
@@ -121,7 +123,7 @@ class AuvDepthEnv(gym.Env):
         self.last_action = thrust
 
         depth_error = self.target_depth - self.depth
-        w1, w2, w3, w4 = 1.0, 0.1, 0.01, 0.001
+        w1, w2, w3, w4 = self.w1, self.w2, self.w3, self.w4
         action_diff = thrust - prev_action
         reward = -(
             w1 * abs(depth_error)
