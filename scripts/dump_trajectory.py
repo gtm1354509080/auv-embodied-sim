@@ -89,8 +89,14 @@ def main():
         if done[0]:
             break
 
-    np.savez(f"results/traj_{args.algo}_{args.scenario}.npz", **traj)
-    print(f"saved results/traj_{args.algo}_{args.scenario}.npz")
+    import csv
+    csv_path = f"results/traj_{args.algo}_{args.scenario}.csv"
+    with open(csv_path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["time", "depth", "target", "action"])
+        for t, d, tg, a in zip(traj["t"], traj["depth"], traj["target"], traj["action"]):
+            w.writerow([t, d, tg, a])
+    print(f"saved {csv_path}")
 
 
 if __name__ == "__main__":
