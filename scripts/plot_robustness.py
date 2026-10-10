@@ -61,13 +61,13 @@ def main():
         "font.family": "serif",
         "font.serif": ["Times New Roman", "Nimbus Roman", "STIXGeneral", "DejaVu Serif"],
         "mathtext.fontset": "stix",
-        "font.size": 8, "axes.labelsize": 8, "legend.fontsize": 6.5,
-        "xtick.labelsize": 7.5, "ytick.labelsize": 7,
+        "font.size": 8, "axes.labelsize": 8, "legend.fontsize": 8,
+        "xtick.labelsize": 8, "ytick.labelsize": 8,
         "axes.linewidth": 0.6,
         "pdf.fonttype": 42, "ps.fonttype": 42,
     })
 
-    fig, ax = plt.subplots(figsize=(3.5, 2.3))
+    fig, ax = plt.subplots(figsize=(3.5, 2.6))
     n_m, n_s = len(methods), len(SCEN_KEYS)
     width = 0.8 / n_m
 
@@ -90,8 +90,9 @@ def main():
     ax.set_ylabel("Hold ratio")
     ax.set_ylim(0.85, 1.0)
     ax.grid(axis="y", alpha=0.3, linewidth=0.4)
-    ax.legend(frameon=False, ncol=3, loc="lower left", columnspacing=0.8, handlelength=1.4)
-    fig.tight_layout()
+    ax.legend(frameon=False, ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.01),
+              columnspacing=0.8, handlelength=1.4)
+    fig.tight_layout(rect=(0, 0, 1, 0.87))
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     fig.savefig(args.out + ".pdf")

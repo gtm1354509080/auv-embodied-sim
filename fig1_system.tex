@@ -1,10 +1,13 @@
 % Fig 1: system overview (two panels).
 % Compile standalone:  pdflatex fig1_system.tex  ->  include fig1_system.pdf
 % Requires: \usepackage{tikz} is NOT needed in main doc if included as PDF.
+% NOTE: scale=0.76 shrinks geometry to ~3.5in (single column) while keeping
+% node text at design size (\small=9pt, \footnotesize=8pt) — no font shrinkage.
 \documentclass[tikz,border=4pt]{standalone}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \begin{document}
 \begin{tikzpicture}[
+  scale=0.76,
   font=\small,
   blk/.style={draw, minimum height=8mm, minimum width=17mm, align=center, inner sep=1mm},
   sumnode/.style={draw, circle, inner sep=0.7mm},
@@ -15,7 +18,7 @@
 % ================= (a) vertical-plane coordinates =================
 \begin{scope}[shift={(0,0)}]
   % z axis (down positive)
-  \draw[arr] (0,0) -- (0,-15mm) node[right, lbl, pos=0.85]{$z$ (down positive)};
+  \draw[arr] (0,0) -- (0,-15mm) node[left, lbl, pos=0.85]{$z$ (down positive)};
   % target depth line
   \draw[dashed] (0,-11mm) -- ++(62mm,0) node[right, lbl]{$z_{\mathrm{ref}}$};
   % AUV body
@@ -31,7 +34,7 @@
 \end{scope}
 
 % ================= (b) control loop =================
-\begin{scope}[shift={(0,-32mm)}]
+\begin{scope}[shift={(0,-38mm)}]
   \node[blk] (ctrl) {Controller\\[-0.5mm]{\footnotesize PID / PPO / SAC}};
   \node[blk, right=8mm of ctrl] (thr) {Thruster\\[-0.5mm]{\footnotesize saturation}};
   \node[blk, right=8mm of thr] (dyn) {AUV vertical\\[-0.5mm]{\footnotesize dynamics}};
@@ -51,7 +54,7 @@
   \node[above=7mm of dyn, lbl, align=center] (dist) {disturbances\\[-0.5mm]{\footnotesize force pulse, $\Delta m$, $\Delta c_d$}};
   \draw[arr, dashed] (dist) -- (dyn);
 
-  \node[lbl, font=\footnotesize\itshape] at ($(ctrl)+(-8mm,10mm)$) {(b) Evaluation-time disturbance injection};
+  \node[lbl, font=\footnotesize\itshape, anchor=south west] at ($(ctrl.north west)+(0,3mm)$) {(b) Evaluation-time disturbance injection};
 \end{scope}
 
 \end{tikzpicture}

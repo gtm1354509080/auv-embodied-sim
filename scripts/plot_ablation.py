@@ -18,8 +18,8 @@ plt.rcParams.update({
     "font.family": "serif",
     "font.serif": ["Times New Roman", "Nimbus Roman", "STIXGeneral", "DejaVu Serif"],
     "mathtext.fontset": "stix",
-    "font.size": 8, "axes.labelsize": 8, "legend.fontsize": 7,
-    "xtick.labelsize": 7, "ytick.labelsize": 7,
+    "font.size": 8, "axes.labelsize": 8, "legend.fontsize": 8,
+    "xtick.labelsize": 8, "ytick.labelsize": 8,
     "axes.linewidth": 0.6, "lines.linewidth": 1.2,
     "pdf.fonttype": 42, "ps.fonttype": 42,
 })
